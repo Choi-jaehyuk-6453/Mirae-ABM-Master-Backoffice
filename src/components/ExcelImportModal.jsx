@@ -216,7 +216,9 @@ export default function ExcelImportModal({ isOpen, onClose, onImport, employees 
 
           const errors = [];
           
-          if (!rawName) errors.push('이름 누락');
+          if (!rawName) {
+            errors.push('이름 누락');
+          }
           
           // Forgiving logic for Site
           if (!rawSite) {
@@ -238,10 +240,8 @@ export default function ExcelImportModal({ isOpen, onClose, onImport, employees 
             rawContractEndDate = '';
           }
 
-          if (!rawCompany) {
+          if (!rawCompany || !['미래에이비엠', '다원피엠씨', '정다운세상', '다원엔텍'].includes(rawCompany)) {
             rawCompany = '미래에이비엠';
-          } else if (!['미래에이비엠', '다원피엠씨', '정다운세상', '다원엔텍'].includes(rawCompany)) {
-            errors.push(`허용되지 않는 법인명 ('${rawCompany}')`);
           }
           
           let formattedPhone = '';
@@ -254,32 +254,25 @@ export default function ExcelImportModal({ isOpen, onClose, onImport, employees 
             } else {
               formattedPhone = rawPhone;
             }
-          }
-
-          if (rawEmail && !rawEmail.includes('@')) {
-            errors.push('이메일 형식 오류 (@ 누락)');
+          } else {
+            formattedPhone = '';
           }
 
           if (!['재직', '휴직', '퇴사'].includes(rawStatus)) {
-            if (!rawStatus) rawStatus = '재직';
-            else errors.push(`부적절한 재직상태 기입 ('${rawStatus}')`);
+            rawStatus = '재직';
           }
 
           if (!['본사관리자', '현장관리자', '일반사용자'].includes(rawAuth)) {
-            if (!rawAuth) rawAuth = '일반사용자';
-            else errors.push(`부적절한 권한 기입 ('${rawAuth}')`);
+            rawAuth = '일반사용자';
           }
 
           if (!['정규직', '계약직'].includes(rawContractType)) {
-            if (!rawContractType) rawContractType = '정규직';
-            else errors.push(`부적절한 계약구분 기입 ('${rawContractType}')`);
+            rawContractType = '정규직';
           }
 
           if (rawContractType === '계약직') {
             if (!rawContractEndDate) {
-              errors.push('계약 종료일 누락');
-            } else if (rawHireDate && rawHireDate > rawContractEndDate) {
-              errors.push('계약 종료일이 입사일보다 이전입니다.');
+              rawContractEndDate = '';
             }
           }
 
