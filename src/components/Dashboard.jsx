@@ -333,26 +333,22 @@ export default function Dashboard({
                     {/* Contract Period */}
                     <td className="py-2.5 px-4 text-center">
                       <div className="flex flex-col items-center justify-center select-none">
-                        {emp.contract_type === '정규직' ? (
+                        {emp.contract_type !== '계약직' ? (
                           <span className="inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
                             정규직
                           </span>
                         ) : (
                           (() => {
                             const isExpiring = isContractExpiringSoon(emp.contract_end_date);
+                            const displayDate = emp.contract_end_date || '미정';
                             return (
-                              <div className="flex flex-col items-center justify-center">
-                                <span className={`inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded border ${
-                                  isExpiring 
-                                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 animate-pulse' 
-                                    : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                                }`}>
-                                  계약직 {isExpiring && '(만료 임박)'}
-                                </span>
-                                <span className={`text-[9px] font-mono mt-1 ${isExpiring ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-zinc-400 dark:text-zinc-500'}`}>
-                                  (~{emp.contract_end_date || '미정'})
-                                </span>
-                              </div>
+                              <span className={`inline-flex px-2 py-0.5 text-[10px] font-bold rounded border ${
+                                isExpiring 
+                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 animate-pulse' 
+                                  : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                              }`}>
+                                {displayDate} {isExpiring && '(만료 임박)'}
+                              </span>
                             );
                           })()
                         )}

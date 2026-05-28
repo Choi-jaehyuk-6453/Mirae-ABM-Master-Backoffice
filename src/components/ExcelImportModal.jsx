@@ -18,11 +18,11 @@ export default function ExcelImportModal({ isOpen, onClose, onImport }) {
 
   // 1. Generate and download pre-formatted Excel template using SheetJS
   const handleDownloadTemplate = () => {
-    const headers = [['이름', '법인명', '사업장명', '부서', '직책', '연락처', '이메일', '재직상태', '권한']];
+    const headers = [['이름', '법인명', '사업장명', '부서', '직책', '연락처', '이메일', '재직상태', '권한', '입사일', '계약구분', '계약종료일']];
     const samples = [
-      ['김연아', '미래에이비엠', '본사', '경영관리팀', '대리', '010-1234-5678', 'ya.kim@miraeabm.co.kr', '재직', '일반사용자'],
-      ['유재석', '다원피엠씨', '연암대학교', '경비반', '반장', '010-9876-5432', 'js.yoo@dawonpmc.co.kr', '재직', '현장관리자'],
-      ['아이유', '정다운세상', '역삼 빌딩', '미화반', '사원', '010-2222-3333', 'iu.lee@jungdown.co.kr', '재직', '일반사용자']
+      ['김연아', '미래에이비엠', '본사', '경영관리팀', '대리', '010-1234-5678', 'ya.kim@miraeabm.co.kr', '재직', '일반사용자', '2025-03-01', '정규직', ''],
+      ['유재석', '다원피엠씨', '연암대학교', '경비반', '반장', '010-9876-5432', 'js.yoo@dawonpmc.co.kr', '재직', '현장관리자', '2024-06-15', '정규직', ''],
+      ['아이유', '정다운세상', '역삼 빌딩', '미화반', '사원', '010-2222-3333', 'iu.lee@jungdown.co.kr', '재직', '일반사용자', '2026-01-10', '계약직', '2027-01-09']
     ];
 
     const wsData = [...headers, ...samples];
@@ -38,7 +38,10 @@ export default function ExcelImportModal({ isOpen, onClose, onImport }) {
       { wch: 16 }, // 연락처
       { wch: 25 }, // 이메일
       { wch: 10 }, // 재직상태
-      { wch: 15 }  // 권한
+      { wch: 15 }, // 권한
+      { wch: 12 }, // 입사일
+      { wch: 12 }, // 계약구분
+      { wch: 12 }  // 계약종료일
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, '인사등록양식');
@@ -110,6 +113,9 @@ export default function ExcelImportModal({ isOpen, onClose, onImport }) {
         
         const statusIdx = fileHeaders.indexOf('재직상태');
         const authIdx = fileHeaders.indexOf('권한');
+        const hireDateIdx = fileHeaders.indexOf('입사일');
+        const contractTypeIdx = fileHeaders.indexOf('계약구분');
+        const contractEndDateIdx = fileHeaders.indexOf('계약종료일');
 
         if (nameIdx === -1 || companyIdx === -1 || siteIdx === -1 || deptIdx === -1 || roleIdx === -1 || phoneIdx === -1) {
           throw new Error("올바른 양식이 아닙니다. 필수 헤더('이름', '법인명', '사업장명', '부서', '직책', '연락처')가 유실되었습니다.");
@@ -117,6 +123,31 @@ export default function ExcelImportModal({ isOpen, onClose, onImport }) {
 
         const validList = [];
         const invalidList = [];
+
+        const parseExcelDate = (val) => {
+          if (!val) return '';
+          const str = String(val).trim();
+          if (!str) return '';
+          
+          if (/^\d{4}[-./]\d{1,2}[-./]\d{1,2}$/.test(str)) {
+            const parts = str.split(/[-./]/);
+            const y = parts[0];
+            const m = parts[1].padStart(2, '0');
+            const d = parts[2].padStart(2, '0');
+            return `${y}-${m}-${d}`;
+          }
+          
+          const num = Number(str);
+          if (!isNaN(num) && num > 30000 && num < 60000) {
+            const date = new Date((num - 25569) * 86400 * 1000);
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+          }
+          
+          return str;
+        };
 
         for (let i = 1; i < rows.length; i++) {
           const row = rows[i];
@@ -135,6 +166,15 @@ export default function ExcelImportModal({ isOpen, onClose, onImport }) {
           let rawStatus = String(statusIdx !== -1 ? row[statusIdx] || '재직' : '재직').trim();
           let rawAuth = String(authIdx !== -1 ? row[authIdx] || '일반사용자' : '일반사용자').trim();
 
+          // Employment details parse
+          let rawHireDate = parseExcelDate(hireDateIdx !== -1 ? row[hireDateIdx] : '');
+          if (!rawHireDate) {
+            rawHireDate = new Date().toISOString().split('T')[0]; // fallback
+          }
+
+          let rawContractType = String(contractTypeIdx !== -1 ? row[contractTypeIdx] || '정규직' : '정규직').trim();
+          let rawContractEndDate = parseExcelDate(contractEndDateIdx !== -1 ? row[contractEndDateIdx] : '');
+
           const errors = [];
           
           if (!rawName) errors.push('이름 누락');
@@ -142,9 +182,11 @@ export default function ExcelImportModal({ isOpen, onClose, onImport }) {
           if (!rawDept) errors.push('부서명 누락');
           if (!rawRole) errors.push('직책 누락');
           
-          // HQ Rule: 본사 직원은 항상 미래에이비엠으로 설정
+          // HQ Rule: 본사 직원은 항상 미래에이비엠으로 설정 및 정규직 강제
           if (rawSite === '본사') {
             rawCompany = '미래에이비엠';
+            rawContractType = '정규직';
+            rawContractEndDate = '';
           }
 
           if (!rawCompany) {
@@ -180,6 +222,19 @@ export default function ExcelImportModal({ isOpen, onClose, onImport }) {
             else errors.push(`부적절한 권한 기입 ('${rawAuth}')`);
           }
 
+          if (!['정규직', '계약직'].includes(rawContractType)) {
+            if (!rawContractType) rawContractType = '정규직';
+            else errors.push(`부적절한 계약구분 기입 ('${rawContractType}')`);
+          }
+
+          if (rawContractType === '계약직') {
+            if (!rawContractEndDate) {
+              errors.push('계약 종료일 누락');
+            } else if (rawHireDate && rawHireDate > rawContractEndDate) {
+              errors.push('계약 종료일이 입사일보다 이전입니다.');
+            }
+          }
+
           const record = {
             rowNum: i + 1,
             name: rawName,
@@ -190,7 +245,10 @@ export default function ExcelImportModal({ isOpen, onClose, onImport }) {
             phone: errors.some(e => e.includes('연락처')) ? rawPhone : formattedPhone,
             email: rawEmail,
             status: rawStatus,
-            authority: rawAuth
+            authority: rawAuth,
+            hire_date: rawHireDate,
+            contract_type: rawContractType,
+            contract_end_date: rawContractType === '계약직' ? rawContractEndDate : ''
           };
 
           if (errors.length > 0) {
@@ -397,7 +455,8 @@ export default function ExcelImportModal({ isOpen, onClose, onImport }) {
                               <th className="py-2 px-3">부서명</th>
                               <th className="py-2 px-3">직책</th>
                               <th className="py-2 px-3">연락처</th>
-                              <th className="py-2 px-3">이메일</th>
+                              <th className="py-2 px-3">입사일</th>
+                              <th className="py-2 px-3">계약기간</th>
                               <th className="py-2 px-3">상태/권한</th>
                             </tr>
                           </thead>
@@ -411,7 +470,14 @@ export default function ExcelImportModal({ isOpen, onClose, onImport }) {
                                 <td className="py-1.5 px-3">{row.department}</td>
                                 <td className="py-1.5 px-3 text-zinc-400">{row.role}</td>
                                 <td className="py-1.5 px-3">{row.phone}</td>
-                                <td className="py-1.5 px-3 text-zinc-450">{row.email || '-'}</td>
+                                <td className="py-1.5 px-3 font-mono">{row.hire_date || '-'}</td>
+                                <td className="py-1.5 px-3 text-[10px]">
+                                  {row.contract_type === '정규직' ? (
+                                    <span className="text-zinc-500 font-bold">정규직</span>
+                                  ) : (
+                                    <span className="text-blue-500 font-bold">계약 ({row.contract_end_date})</span>
+                                  )}
+                                </td>
                                 <td className="py-1.5 px-3 text-zinc-500">
                                   <span className="text-[10px] text-emerald-600 dark:text-emerald-400">{row.status}</span>
                                   <span className="text-[10px] mx-1">/</span>
