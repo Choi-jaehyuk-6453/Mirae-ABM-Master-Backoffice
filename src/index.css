@@ -1,0 +1,136 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+:root {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #FAFAFA; /* Bright light background */
+  color: #3F3F46; /* Zinc 700 dark gray text */
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Custom Scrollbar for Corporate UI */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F4F4F5; /* Zinc 100 */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D4D4D8; /* Zinc 300 */
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A1A1AA; /* Zinc 500 */
+}
+
+/* Dark Mode Scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #18181B; /* Zinc 900 */
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #3F3F46; /* Zinc 700 */
+}
+
+/* Minimal Corporate UI Utilities */
+.corporate-header {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid #E4E4E7; /* Zinc 200 */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+}
+
+.dark .corporate-header {
+  background-color: rgba(9, 9, 11, 0.9); /* Zinc 950 */
+  border-bottom: 1px solid #27272A; /* Zinc 800 */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.corporate-card {
+  background-color: #FFFFFF;
+  border: 1px solid #F4F4F5; /* Zinc 100 */
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  border-radius: 16px; /* 16px border-radius */
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark .corporate-card {
+  background-color: #09090B; /* Zinc 950 */
+  border: 1px solid #27272A; /* Zinc 800 */
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+.corporate-card:hover {
+  border-color: #E4E4E7;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+.dark .corporate-card:hover {
+  border-color: #3F3F46;
+}
+
+/* Custom High Density Dropzone */
+.corporate-dropzone {
+  background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%23E4E4E7FF' stroke-width='2' stroke-dasharray='6%2c 6' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+  background-color: #FFFFFF;
+  border-radius: 16px;
+  transition: all 0.2s ease;
+}
+
+.dark .corporate-dropzone {
+  background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%2327272AFF' stroke-width='2' stroke-dasharray='6%2c 6' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+  background-color: #09090B;
+}
+
+.corporate-dropzone:hover {
+  background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%231B3D8EFF' stroke-width='2' stroke-dasharray='6%2c 6' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+}
+
+.dark .corporate-dropzone:hover {
+  background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%233B66C4FF' stroke-width='2' stroke-dasharray='6%2c 6' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Global input fields styling */
+input, select, textarea {
+  transition: all 0.15s ease-in-out;
+}
+
+/* Status dots glow */
+.pulse-glow-blue {
+  box-shadow: 0 0 8px rgba(27, 61, 142, 0.4);
+}
+.pulse-glow-orange {
+  box-shadow: 0 0 8px rgba(243, 156, 18, 0.4);
+}
+.pulse-glow-green {
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
