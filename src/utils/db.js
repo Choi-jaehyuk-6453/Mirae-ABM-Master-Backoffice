@@ -6,15 +6,15 @@ let connectionConfig = null;
 // Initial high-quality mock data for Demo Mode
 // Initial high-quality mock data for Demo Mode
 const INITIAL_MOCK_EMPLOYEES = [
-  { emp_id: 1, name: '김민준', company_name: '미래에이비엠', site_name: '본사', department: '미래전략팀', role: '부장', phone: '010-1234-5678', email: 'mj.kim@miraeabm.co.kr', status: '재직', authority: '본사관리자' },
-  { emp_id: 2, name: '이서연', company_name: '미래에이비엠', site_name: '본사', department: '경영관리팀', role: '과장', phone: '010-2345-6789', email: 'sy.lee@miraeabm.co.kr', status: '재직', authority: '본사관리자' },
-  { emp_id: 3, name: '박우진', company_name: '다원피엠씨', site_name: '연암대학교', department: '보안팀', role: '팀장', phone: '010-3456-7890', email: 'wj.park@dawonpmc.co.kr', status: '재직', authority: '현장관리자' },
-  { emp_id: 4, name: '최지우', company_name: '정다운세상', site_name: '연암대학교', department: '미화소독팀', role: '조장', phone: '010-4567-8901', email: 'jw.choi@jungdown.co.kr', status: '재직', authority: '일반사용자' },
-  { emp_id: 5, name: '정해인', company_name: '다원엔텍', site_name: '서초 현장', department: '현장 관리소', role: '소장', phone: '010-5678-9012', email: 'hi.jung@dawonentec.co.kr', status: '재직', authority: '현장관리자' },
-  { emp_id: 6, name: '강동원', company_name: '다원피엠씨', site_name: '서초 현장', department: '경비반', role: '반장', phone: '010-6789-0123', email: 'dw.kang@dawonpmc.co.kr', status: '휴직', authority: '일반사용자' },
-  { emp_id: 7, name: '윤아름', company_name: '정다운세상', site_name: '역삼 빌딩', department: '미화반', role: '사원', phone: '010-7890-1234', email: 'ar.yoon@jungdown.co.kr', status: '퇴사', authority: '일반사용자' },
-  { emp_id: 8, name: '한지민', company_name: '미래에이비엠', site_name: '본사', department: '임원', role: '대표이사', phone: '010-8901-2345', email: 'jm.han@miraeabm.co.kr', status: '재직', authority: '본사관리자' },
-  { emp_id: 9, name: '송중기', company_name: '다원엔텍', site_name: '연암대학교', department: '기술팀', role: '대리', phone: '010-9012-3456', email: 'jk.song@dawonentec.co.kr', status: '재직', authority: '일반사용자' }
+  { emp_id: 1, name: '김민준', company_name: '미래에이비엠', site_name: '본사', department: '미래전략팀', role: '부장', phone: '010-1234-5678', email: 'mj.kim@miraeabm.co.kr', status: '재직', authority: '본사관리자', status_reason: '', status_date: '', leave_start_date: '', leave_end_date: '', hire_date: '2022-03-01', contract_type: '정규직', contract_end_date: '' },
+  { emp_id: 2, name: '이서연', company_name: '미래에이비엠', site_name: '본사', department: '경영관리팀', role: '과장', phone: '010-2345-6789', email: 'sy.lee@miraeabm.co.kr', status: '재직', authority: '본사관리자', status_reason: '', status_date: '', leave_start_date: '', leave_end_date: '', hire_date: '2023-05-15', contract_type: '정규직', contract_end_date: '' },
+  { emp_id: 3, name: '박우진', company_name: '다원피엠씨', site_name: '연암대학교', department: '보안팀', role: '팀장', phone: '010-3456-7890', email: 'wj.park@dawonpmc.co.kr', status: '재직', authority: '현장관리자', status_reason: '', status_date: '', leave_start_date: '', leave_end_date: '', hire_date: '2021-11-01', contract_type: '정규직', contract_end_date: '' },
+  { emp_id: 4, name: '최지우', company_name: '정다운세상', site_name: '연암대학교', department: '미화소독팀', role: '조장', phone: '010-4567-8901', email: 'jw.choi@jungdown.co.kr', status: '재직', authority: '일반사용자', status_reason: '', status_date: '', leave_start_date: '', leave_end_date: '', hire_date: '2024-02-10', contract_type: '계약직', contract_end_date: '2027-02-09' },
+  { emp_id: 5, name: '정해인', company_name: '다원엔텍', site_name: '서초 현장', department: '현장 관리소', role: '소장', phone: '010-5678-9012', email: 'hi.jung@dawonentec.co.kr', status: '재직', authority: '현장관리자', status_reason: '', status_date: '', leave_start_date: '', leave_end_date: '', hire_date: '2020-07-20', contract_type: '정규직', contract_end_date: '' },
+  { emp_id: 6, name: '강동원', company_name: '다원피엠씨', site_name: '서초 현장', department: '경비반', role: '반장', phone: '010-6789-0123', email: 'dw.kang@dawonpmc.co.kr', status: '휴직', authority: '일반사용자', status_reason: '육아휴직', status_date: '2026-03-01', leave_start_date: '2026-03-01', leave_end_date: '2027-02-28', hire_date: '2023-10-01', contract_type: '정규직', contract_end_date: '' },
+  { emp_id: 7, name: '윤아름', company_name: '정다운세상', site_name: '역삼 빌딩', department: '미화반', role: '사원', phone: '010-7890-1234', email: 'ar.yoon@jungdown.co.kr', status: '퇴사', authority: '일반사용자', status_reason: '개인사정', status_date: '2026-05-15', leave_start_date: '', leave_end_date: '', hire_date: '2022-06-15', contract_type: '계약직', contract_end_date: '2025-06-14' },
+  { emp_id: 8, name: '한지민', company_name: '미래에이비엠', site_name: '본사', department: '임원', role: '대표이사', phone: '010-8901-2345', email: 'jm.han@miraeabm.co.kr', status: '재직', authority: '본사관리자', status_reason: '', status_date: '', leave_start_date: '', leave_end_date: '', hire_date: '2015-01-02', contract_type: '정규직', contract_end_date: '' },
+  { emp_id: 9, name: '송중기', company_name: '다원엔텍', site_name: '연암대학교', department: '기술팀', role: '대리', phone: '010-9012-3456', email: 'jk.song@dawonentec.co.kr', status: '재직', authority: '일반사용자', status_reason: '', status_date: '', leave_start_date: '', leave_end_date: '', hire_date: '2023-01-10', contract_type: '계약직', contract_end_date: '2026-12-31' }
 ];
 
 // Initial mock apps for App Integration Portal
@@ -48,14 +48,19 @@ const INITIAL_MOCK_APPS = [
   }
 ];
 
+const INITIAL_MOCK_STATUS_HISTORY = [
+  { history_id: 1, emp_id: 6, name: '강동원', company_name: '다원피엠씨', previous_status: '재직', new_status: '휴직', status_reason: '육아휴직', status_date: '2026-03-01', updated_at: '2026-03-01T10:00:00.000Z' },
+  { history_id: 2, emp_id: 7, name: '윤아름', company_name: '정다운세상', previous_status: '재직', new_status: '퇴사', status_reason: '개인사정', status_date: '2026-05-15', updated_at: '2026-05-15T15:30:00.000Z' }
+];
+
 // Initialize localStorage if empty
 const initLocalStorage = () => {
-  // If db_employees exists but doesn't have company_name, we clear it to reload INITIAL_MOCK_EMPLOYEES
+  // If db_employees exists but doesn't have hire_date, we clear it to reload INITIAL_MOCK_EMPLOYEES
   const existingEmployees = localStorage.getItem('db_employees');
   if (existingEmployees) {
     try {
       const parsed = JSON.parse(existingEmployees);
-      if (parsed.length > 0 && (!parsed[0].hasOwnProperty('company_name') || !parsed[0].hasOwnProperty('email'))) {
+      if (parsed.length > 0 && !parsed[0].hasOwnProperty('hire_date')) {
         localStorage.removeItem('db_employees');
       }
     } catch (e) {
@@ -82,6 +87,10 @@ const initLocalStorage = () => {
   
   if (!localStorage.getItem('db_apps')) {
     localStorage.setItem('db_apps', JSON.stringify(INITIAL_MOCK_APPS));
+  }
+
+  if (!localStorage.getItem('db_status_history')) {
+    localStorage.setItem('db_status_history', JSON.stringify(INITIAL_MOCK_STATUS_HISTORY));
   }
 };
 
@@ -194,12 +203,32 @@ export const db = {
             phone: employee.phone,
             email: employee.email || '',
             status: employee.status || '재직',
-            authority: employee.authority || '일반사용자'
+            authority: employee.authority || '일반사용자',
+            status_reason: employee.status_reason || '',
+            status_date: employee.status_date || '',
+            leave_start_date: employee.leave_start_date || '',
+            leave_end_date: employee.leave_end_date || '',
+            hire_date: employee.hire_date || '',
+            contract_type: employee.contract_type || '정규직',
+            contract_end_date: employee.contract_end_date || ''
           }
         ])
         .select();
  
       if (error) throw error;
+      
+      // Since it's a new employee, if they are inserted with a status other than '재직', we log a status history entry!
+      if (employee.status && employee.status !== '재직') {
+        await db.addStatusHistoryEntry({
+          emp_id: data[0].emp_id,
+          name: employee.name,
+          company_name: employee.company_name,
+          previous_status: '신규등록',
+          new_status: employee.status,
+          status_reason: employee.status_reason || '',
+          status_date: employee.status_date || new Date().toISOString().split('T')[0]
+        });
+      }
       return data[0];
     } else {
       // Demo Mode
@@ -215,10 +244,29 @@ export const db = {
         phone: employee.phone,
         email: employee.email || '',
         status: employee.status || '재직',
-        authority: employee.authority || '일반사용자'
+        authority: employee.authority || '일반사용자',
+        status_reason: employee.status_reason || '',
+        status_date: employee.status_date || '',
+        leave_start_date: employee.leave_start_date || '',
+        leave_end_date: employee.leave_end_date || '',
+        hire_date: employee.hire_date || '',
+        contract_type: employee.contract_type || '정규직',
+        contract_end_date: employee.contract_end_date || ''
       };
       list.push(newEmp);
       localStorage.setItem('db_employees', JSON.stringify(list));
+      
+      if (employee.status && employee.status !== '재직') {
+        await db.addStatusHistoryEntry({
+          emp_id: newId,
+          name: employee.name,
+          company_name: employee.company_name,
+          previous_status: '신규등록',
+          new_status: employee.status,
+          status_reason: employee.status_reason || '',
+          status_date: employee.status_date || new Date().toISOString().split('T')[0]
+        });
+      }
       return newEmp;
     }
   },
@@ -239,7 +287,14 @@ export const db = {
           phone: e.phone,
           email: e.email || '',
           status: e.status || '재직',
-          authority: e.authority || '일반사용자'
+          authority: e.authority || '일반사용자',
+          status_reason: e.status_reason || '',
+          status_date: e.status_date || '',
+          leave_start_date: e.leave_start_date || '',
+          leave_end_date: e.leave_end_date || '',
+          hire_date: e.hire_date || '',
+          contract_type: e.contract_type || '정규직',
+          contract_end_date: e.contract_end_date || ''
         })))
         .select();
  
@@ -262,7 +317,14 @@ export const db = {
           phone: e.phone,
           email: e.email || '',
           status: e.status || '재직',
-          authority: e.authority || '일반사용자'
+          authority: e.authority || '일반사용자',
+          status_reason: e.status_reason || '',
+          status_date: e.status_date || '',
+          leave_start_date: e.leave_start_date || '',
+          leave_end_date: e.leave_end_date || '',
+          hire_date: e.hire_date || '',
+          contract_type: e.contract_type || '정규직',
+          contract_end_date: e.contract_end_date || ''
         };
       });
 
@@ -274,7 +336,20 @@ export const db = {
 
   // 4. Update Employee
   updateEmployee: async (emp_id, updates) => {
+    let previousEmployee = null;
     if (db.isSupabaseConnected()) {
+      // Fetch previous first
+      try {
+        const { data: fetchRes } = await supabaseClient
+          .from('tb_employees')
+          .select('*')
+          .eq('emp_id', emp_id)
+          .single();
+        previousEmployee = fetchRes;
+      } catch (e) {
+        console.error('Failed to fetch previous employee from Supabase:', e);
+      }
+      
       const { data, error } = await supabaseClient
         .from('tb_employees')
         .update({
@@ -286,18 +361,41 @@ export const db = {
           phone: updates.phone,
           email: updates.email,
           status: updates.status,
-          authority: updates.authority
+          authority: updates.authority,
+          status_reason: updates.status_reason,
+          status_date: updates.status_date,
+          leave_start_date: updates.leave_start_date,
+          leave_end_date: updates.leave_end_date,
+          hire_date: updates.hire_date,
+          contract_type: updates.contract_type,
+          contract_end_date: updates.contract_end_date
         })
         .eq('emp_id', emp_id)
         .select();
  
       if (error) throw error;
+      
+      // Status change logging
+      if (previousEmployee && previousEmployee.status !== updates.status) {
+        await db.addStatusHistoryEntry({
+          emp_id: emp_id,
+          name: updates.name || previousEmployee.name,
+          company_name: updates.company_name || previousEmployee.company_name,
+          previous_status: previousEmployee.status,
+          new_status: updates.status,
+          status_reason: updates.status_reason || '',
+          status_date: updates.status_date || new Date().toISOString().split('T')[0]
+        });
+      }
       return data[0];
     } else {
       // Demo Mode
       const list = JSON.parse(localStorage.getItem('db_employees') || '[]');
       const idx = list.findIndex(e => e.emp_id === Number(emp_id));
       if (idx === -1) throw new Error('해당 직원을 찾을 수 없습니다.');
+      
+      previousEmployee = { ...list[idx] };
+      const prevStatus = previousEmployee.status;
       
       list[idx] = {
         ...list[idx],
@@ -309,12 +407,126 @@ export const db = {
         phone: updates.phone ?? list[idx].phone,
         email: updates.email ?? list[idx].email,
         status: updates.status ?? list[idx].status,
-        authority: updates.authority ?? list[idx].authority
+        authority: updates.authority ?? list[idx].authority,
+        status_reason: updates.status_reason !== undefined ? updates.status_reason : list[idx].status_reason,
+        status_date: updates.status_date !== undefined ? updates.status_date : list[idx].status_date,
+        leave_start_date: updates.leave_start_date !== undefined ? updates.leave_start_date : list[idx].leave_start_date,
+        leave_end_date: updates.leave_end_date !== undefined ? updates.leave_end_date : list[idx].leave_end_date,
+        hire_date: updates.hire_date !== undefined ? updates.hire_date : list[idx].hire_date,
+        contract_type: updates.contract_type !== undefined ? updates.contract_type : list[idx].contract_type,
+        contract_end_date: updates.contract_end_date !== undefined ? updates.contract_end_date : list[idx].contract_end_date
       };
       
       localStorage.setItem('db_employees', JSON.stringify(list));
+      
+      if (prevStatus !== updates.status) {
+        await db.addStatusHistoryEntry({
+          emp_id: emp_id,
+          name: list[idx].name,
+          company_name: list[idx].company_name,
+          previous_status: prevStatus,
+          new_status: updates.status,
+          status_reason: updates.status_reason || '',
+          status_date: updates.status_date || new Date().toISOString().split('T')[0]
+        });
+      }
       return list[idx];
     }
+  },
+
+  // 4b. Fetch Status History Log
+  getStatusHistory: async () => {
+    if (db.isSupabaseConnected()) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('tb_status_history')
+          .select('*')
+          .order('history_id', { ascending: false });
+        
+        if (error) throw error;
+        return data;
+      } catch (err) {
+        console.error('Supabase status history fetch failed, falling back to local storage:', err);
+        return JSON.parse(localStorage.getItem('db_status_history') || '[]');
+      }
+    } else {
+      return JSON.parse(localStorage.getItem('db_status_history') || '[]');
+    }
+  },
+
+  // 4c. Add Status History Entry
+  addStatusHistoryEntry: async (entry) => {
+    const timestamp = new Date().toISOString();
+    if (db.isSupabaseConnected()) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('tb_status_history')
+          .insert([
+            {
+              emp_id: entry.emp_id,
+              name: entry.name,
+              company_name: entry.company_name,
+              previous_status: entry.previous_status,
+              new_status: entry.new_status,
+              status_reason: entry.status_reason || '',
+              status_date: entry.status_date || timestamp.split('T')[0]
+            }
+          ])
+          .select();
+        if (error && error.code !== 'PGRST116') {
+          console.warn('Supabase status history insert encountered error:', error);
+        } else if (data && data.length > 0) {
+          return data[0];
+        }
+      } catch (err) {
+        console.error('Supabase status history insert failed, saving to local storage:', err);
+      }
+    }
+    
+    // Save to local storage anyway or as fallback
+    const list = JSON.parse(localStorage.getItem('db_status_history') || '[]');
+    const newId = list.length > 0 ? Math.max(...list.map(h => h.history_id || 0)) + 1 : 1;
+    const newEntry = {
+      history_id: newId,
+      emp_id: entry.emp_id,
+      name: entry.name,
+      company_name: entry.company_name,
+      previous_status: entry.previous_status,
+      new_status: entry.new_status,
+      status_reason: entry.status_reason || '',
+      status_date: entry.status_date || timestamp.split('T')[0],
+      updated_at: timestamp
+    };
+    list.unshift(newEntry); // newest first
+    localStorage.setItem('db_status_history', JSON.stringify(list));
+    return newEntry;
+  },
+
+  // 4d. Check Duplicate Employee
+  checkDuplicateEmployee: async (name, phone, email) => {
+    // Stripped phone helper
+    const stripPhone = (p) => String(p || '').replace(/[^0-9]/g, '');
+    const searchPhone = stripPhone(phone);
+    
+    let employees = [];
+    if (db.isSupabaseConnected()) {
+      try {
+        const { data } = await supabaseClient.from('tb_employees').select('*');
+        employees = data || [];
+      } catch (e) {
+        employees = JSON.parse(localStorage.getItem('db_employees') || '[]');
+      }
+    } else {
+      employees = JSON.parse(localStorage.getItem('db_employees') || '[]');
+    }
+
+    // Find duplicates: name must match, and (phone matches OR email matches)
+    return employees.find(emp => {
+      const nameMatch = String(emp.name).trim() === String(name).trim();
+      const phoneMatch = searchPhone && stripPhone(emp.phone) === searchPhone;
+      const emailMatch = email && String(emp.email).trim() === String(email).trim();
+      return nameMatch && (phoneMatch || emailMatch);
+    });
   },
 
   // 5. Connect and fetch external integration apps

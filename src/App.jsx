@@ -22,6 +22,7 @@ export default function App() {
   // Data states
   const [employees, setEmployees] = useState([]);
   const [apps, setApps] = useState([]);
+  const [statusHistory, setStatusHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   
   // Modal & Toast states
@@ -60,8 +61,10 @@ export default function App() {
     try {
       const empData = await db.getEmployees();
       const appData = await db.getApps();
+      const historyData = await db.getStatusHistory();
       setEmployees(empData);
       setApps(appData);
+      setStatusHistory(historyData);
     } catch (err) {
       console.error(err);
       showToast('데이터 조회 중 오류가 발생했습니다.', 'error');
@@ -94,15 +97,17 @@ export default function App() {
     setIsDemoMode(false);
     setEmployees([]);
     setApps([]);
+    setStatusHistory([]);
     showToast('데이터베이스 연동이 해제되었습니다.', 'info');
   };
 
   // Employee CRUD Handlers
-  const handleSaveEmployee = async (employeeData) => {
+  const handleSaveEmployee = async (employeeData, overwriteEmpId) => {
     try {
-      if (employeeToEdit) {
-        const updated = await db.updateEmployee(employeeToEdit.emp_id, employeeData);
-        showToast(`사원 '${updated.name}' 정보가 성공적으로 수정되었습니다.`, 'success');
+      const targetId = overwriteEmpId || employeeToEdit?.emp_id;
+      if (targetId) {
+        const updated = await db.updateEmployee(targetId, employeeData);
+        showToast(`사원 '${updated.name}' 정보가 업데이트(동일인 조정) 되었습니다.`, 'success');
       } else {
         const created = await db.insertEmployee(employeeData);
         showToast(`신규 사원 '${created.name}' 정보가 등록되었습니다.`, 'success');
@@ -121,7 +126,15 @@ export default function App() {
       const targetEmp = employees.find(e => e.emp_id === empId);
       if (!targetEmp) return;
 
-      const updated = await db.updateEmployee(empId, { ...targetEmp, status: '퇴사' });
+      const reason = window.prompt(`사원 '${targetEmp.name}'을 퇴사 처리합니다. 퇴사 사유를 기입해 주십시오:`, '자진퇴사');
+      if (reason === null) return; // User cancelled
+
+      const updated = await db.updateEmployee(empId, { 
+        ...targetEmp, 
+        status: '퇴사',
+        status_reason: reason || '자진퇴사',
+        status_date: new Date().toISOString().split('T')[0]
+      });
       showToast(`사원 '${updated.name}' 퇴사(소프트 삭제) 처리가 완료되었습니다.`, 'success');
       loadAllData();
     } catch (err) {
@@ -274,6 +287,7 @@ export default function App() {
               }}
               onExcelImportClick={() => setIsExcelModalOpen(true)}
               onQuickSoftDelete={handleQuickSoftDelete}
+              statusHistory={statusHistory}
             />
           ) : (
             <IntegrationPortal

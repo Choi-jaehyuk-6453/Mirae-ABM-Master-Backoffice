@@ -5,12 +5,30 @@ import {
   Plus, FileSpreadsheet, Edit2, ShieldAlert
 } from 'lucide-react';
 
+
+const isContractExpiringSoon = (endDateStr) => {
+  if (!endDateStr) return false;
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endDate = new Date(endDateStr);
+    endDate.setHours(0, 0, 0, 0);
+    const diffTime = endDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 && diffDays <= 30;
+  } catch (e) {
+    return false;
+  }
+};
+
 export default function Dashboard({ 
+
   employees, 
   onAddClick, 
   onEditClick, 
   onExcelImportClick, 
-  onQuickSoftDelete 
+  onQuickSoftDelete,
+  statusHistory = []
 }) {
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,6 +74,19 @@ export default function Dashboard({
       return matchesSearch && matchesCompany && matchesSite && matchesDept && matchesStatus;
     });
   }, [employees, searchTerm, selectedCompany, selectedSite, selectedDept, selectedStatus]);
+
+  // History filter states
+  const [historySearch, setHistorySearch] = useState('');
+
+  const filteredHistory = useMemo(() => {
+    return statusHistory.filter(log => {
+      const matchText = historySearch.toLowerCase();
+      return String(log.name).toLowerCase().includes(matchText) ||
+             String(log.company_name).toLowerCase().includes(matchText) ||
+             String(log.status_reason || '').toLowerCase().includes(matchText) ||
+             String(log.new_status || '').toLowerCase().includes(matchText);
+    });
+  }, [statusHistory, historySearch]);
 
   // Clear all filters
   const handleResetFilters = () => {
@@ -255,11 +286,14 @@ export default function Dashboard({
                 <th className="py-3.5 px-4">직책</th>
                 <th className="py-3.5 px-4">연락처</th>
                 <th className="py-3.5 px-4">이메일</th>
+                <th className="py-3.5 px-4 w-24 text-center">입사일</th>
+                <th className="py-3.5 px-4 w-28 text-center">계약기간</th>
                 <th className="py-3.5 px-4 w-20 text-center">재직상태</th>
                 <th className="py-3.5 px-4 w-24 text-center">접근권한</th>
                 <th className="py-3.5 px-4 w-24 text-center">관리 액션</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-850">
               {filteredEmployees.length > 0 ? (
                 filteredEmployees.map((emp) => (
@@ -291,17 +325,73 @@ export default function Dashboard({
                     {/* Email */}
                     <td className="py-2.5 px-4 font-mono text-zinc-500 dark:text-zinc-450 truncate max-w-[150px]" title={emp.email}>{emp.email || '-'}</td>
                     
+                    {/* Join Date (Hire Date) */}
+                    <td className="py-2.5 px-4 text-center font-mono text-zinc-650 dark:text-zinc-350 select-none">
+                      {emp.hire_date || '-'}
+                    </td>
+
+                    {/* Contract Period */}
+                    <td className="py-2.5 px-4 text-center">
+                      <div className="flex flex-col items-center justify-center select-none">
+                        {emp.contract_type === '정규직' ? (
+                          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                            정규직
+                          </span>
+                        ) : (
+                          (() => {
+                            const isExpiring = isContractExpiringSoon(emp.contract_end_date);
+                            return (
+                              <div className="flex flex-col items-center justify-center">
+                                <span className={`inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded border ${
+                                  isExpiring 
+                                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 animate-pulse' 
+                                    : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                                }`}>
+                                  계약직 {isExpiring && '(만료 임박)'}
+                                </span>
+                                <span className={`text-[9px] font-mono mt-1 ${isExpiring ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                                  (~{emp.contract_end_date || '미정'})
+                                </span>
+                              </div>
+                            );
+                          })()
+                        )}
+                      </div>
+                    </td>
+
                     {/* Status Badge */}
                     <td className="py-2.5 px-4 text-center">
-                      <span className={`inline-flex px-2 py-0.5 text-[10px] font-bold rounded-full border ${
-                        emp.status === '재직' 
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
-                          : emp.status === '휴직'
-                          ? 'bg-[#F39C12]/10 text-[#F39C12] border-[#F39C12]/20'
-                          : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                      }`}>
-                        {emp.status}
-                      </span>
+
+                      <div className="flex flex-col items-center justify-center">
+                        <span className={`inline-flex px-2 py-0.5 text-[10px] font-bold rounded-full border ${
+                          emp.status === '재직' 
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
+                            : emp.status === '휴직'
+                            ? 'bg-[#F39C12]/10 text-[#F39C12] border-[#F39C12]/20'
+                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                        }`}>
+                          {emp.status}
+                        </span>
+                        
+                        {/* Conditional status metadata details */}
+                        {emp.status === '휴직' && (
+                          <div className="text-[9px] text-[#F39C12] mt-1 select-none font-sans font-bold whitespace-nowrap leading-tight text-center">
+                            <div>{emp.status_reason || '사유 미기입'}</div>
+                            <div className="text-[8px] text-zinc-400 dark:text-zinc-550 font-mono mt-0.5 font-normal">
+                              ({emp.leave_start_date && emp.leave_end_date ? `${emp.leave_start_date.slice(2)}~${emp.leave_end_date.slice(2)}` : '기간 미지정'})
+                            </div>
+                          </div>
+                        )}
+
+                        {emp.status === '퇴사' && (
+                          <div className="text-[9px] text-rose-500/90 mt-1 select-none font-sans font-bold whitespace-nowrap leading-tight text-center">
+                            <div>{emp.status_reason || '사유 미기입'}</div>
+                            <div className="text-[8px] text-zinc-400 dark:text-zinc-550 font-mono mt-0.5 font-normal">
+                              ({emp.status_date ? emp.status_date.slice(2) : '일자 미지정'})
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </td>
                     
                     {/* Authority Badge */}
@@ -348,11 +438,12 @@ export default function Dashboard({
                 ))
               ) : (
                 <tr>
-                  <td colSpan="11" className="py-10 text-center text-zinc-400 font-medium">
+                  <td colSpan="13" className="py-10 text-center text-zinc-400 font-medium">
                     조회된 임직원이 존재하지 않습니다.
                   </td>
                 </tr>
               )}
+
             </tbody>
           </table>
         </div>
@@ -364,6 +455,127 @@ export default function Dashboard({
           </span>
           <span className="text-zinc-400 dark:text-zinc-500 font-mono text-[10px]">
             Master Data Control Portal
+          </span>
+        </div>
+      </div>
+
+      {/* 5. 인사 상태 변동 이력 로그 조회 포털 */}
+      <div className="corporate-card shadow-sm border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden mt-6 text-left">
+        {/* Header */}
+        <div className="bg-zinc-50 dark:bg-zinc-900/60 px-5 py-4 border-b border-zinc-200 dark:border-zinc-850 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="text-left select-none">
+            <h3 className="text-xs md:text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5 m-0">
+              <span className="w-1.5 h-3 bg-[#1B3D8E] dark:bg-[#3B66C4] rounded-sm block"></span>
+              <span>인사 상태 변동 이력 로그 (Audit Logs)</span>
+            </h3>
+            <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono tracking-wide mt-1 block">
+              Real-time Employment Status Change History Registry
+            </span>
+          </div>
+
+          {/* History Search bar */}
+          <div className="relative w-full sm:w-64">
+            <Search size={12} className="absolute left-3 top-2 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="이름, 법인, 사유로 검색..."
+              value={historySearch}
+              onChange={(e) => setHistorySearch(e.target.value)}
+              className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-8 pr-3 py-1 text-xs text-zinc-800 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#1B3D8E] focus:ring-1 focus:ring-[#1B3D8E]"
+            />
+          </div>
+        </div>
+
+        {/* Logs Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left">
+            <thead>
+              <tr className="bg-zinc-50/50 dark:bg-zinc-900/30 border-b border-zinc-200 dark:border-zinc-850 text-zinc-500 dark:text-zinc-450 font-semibold tracking-wide select-none">
+                <th className="py-2.5 px-4 font-mono w-40">기록 일시</th>
+                <th className="py-2.5 px-4">사원명 (ID)</th>
+                <th className="py-2.5 px-4">소속 법인</th>
+                <th className="py-2.5 px-4 w-40 text-center">변동 내용</th>
+                <th className="py-2.5 px-4">변경 사유</th>
+                <th className="py-2.5 px-4 w-28 text-center">적용 일자</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-850">
+              {filteredHistory.length > 0 ? (
+                filteredHistory.map((log) => (
+                  <tr key={log.history_id} className="hover:bg-zinc-50/30 dark:hover:bg-zinc-900/5 transition-colors">
+                    {/* Timestamp */}
+                    <td className="py-2.5 px-4 font-mono text-zinc-450 dark:text-zinc-500">
+                      {log.updated_at ? new Date(log.updated_at).toLocaleString('ko-KR') : '-'}
+                    </td>
+                    
+                    {/* Employee Name (ID) */}
+                    <td className="py-2.5 px-4 font-semibold text-zinc-800 dark:text-white">
+                      {log.name} <span className="text-[10px] text-zinc-400 font-mono font-normal">(#{log.emp_id})</span>
+                    </td>
+                    
+                    {/* Company */}
+                    <td className="py-2.5 px-4 text-[#1B3D8E] dark:text-[#3B66C4] font-medium">
+                      {log.company_name}
+                    </td>
+                    
+                    {/* Action flow */}
+                    <td className="py-2.5 px-4 text-center">
+                      <div className="flex items-center justify-center gap-1.5 text-[11px]">
+                        <span className={`px-1.5 py-0.5 rounded border text-[9px] font-bold ${
+                          log.previous_status === '재직'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                            : log.previous_status === '휴직'
+                            ? 'bg-[#F39C12]/10 text-[#F39C12] border-[#F39C12]/20'
+                            : log.previous_status === '퇴사'
+                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700'
+                        }`}>
+                          {log.previous_status}
+                        </span>
+                        <span className="text-zinc-400 font-bold font-mono">→</span>
+                        <span className={`px-1.5 py-0.5 rounded border text-[9px] font-bold ${
+                          log.new_status === '재직'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                            : log.new_status === '휴직'
+                            ? 'bg-[#F39C12]/10 text-[#F39C12] border-[#F39C12]/20'
+                            : log.new_status === '퇴사'
+                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700'
+                        }`}>
+                          {log.new_status}
+                        </span>
+                      </div>
+                    </td>
+                    
+                    {/* Reason */}
+                    <td className="py-2.5 px-4 text-zinc-650 dark:text-zinc-350">
+                      {log.status_reason || '-'}
+                    </td>
+                    
+                    {/* Effective Date */}
+                    <td className="py-2.5 px-4 text-center font-mono text-zinc-500">
+                      {log.status_date || '-'}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="py-8 text-center text-zinc-455 font-medium">
+                    기록된 상태 변동 이력이 존재하지 않습니다.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Counter */}
+        <div className="bg-zinc-50 dark:bg-zinc-900/60 px-4 py-2.5 border-t border-zinc-200 dark:border-zinc-850 flex items-center justify-between text-[10px] text-zinc-400 font-medium">
+          <span>
+            이력 로그 수: <strong>{filteredHistory.length}</strong>건
+          </span>
+          <span className="font-mono text-zinc-450">
+            System Activity Log Audit Trail
           </span>
         </div>
       </div>
