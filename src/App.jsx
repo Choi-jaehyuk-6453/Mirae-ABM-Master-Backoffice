@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Sparkles, LogOut, Users, Cpu, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Database, Sparkles, LogOut, Users, Cpu, AlertTriangle, ShieldCheck, Copy } from 'lucide-react';
 import { db } from './utils/db';
 
 // Component Imports
