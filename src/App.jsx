@@ -32,6 +32,7 @@ export default function App() {
   const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' | 'info' }
   const [dbMigrationSql, setDbMigrationSql] = useState(null);
   const [copiedMigrationSql, setCopiedMigrationSql] = useState(false);
+  const [lastDatabaseError, setLastDatabaseError] = useState('');
 
   // Toast helper
   const showToast = (message, type = 'success') => {
@@ -120,6 +121,7 @@ export default function App() {
     } catch (err) {
       console.error(err);
       const errMsg = err.message || err.details || JSON.stringify(err);
+      setLastDatabaseError(errMsg);
       if (
         errMsg.includes('contract_end_date') || 
         errMsg.includes('contract_type') || 
@@ -169,6 +171,7 @@ ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS contract_end_date text DEFAULT
       setLoading(false);
       console.error(err);
       const errMsg = err.message || err.details || JSON.stringify(err);
+      setLastDatabaseError(errMsg);
       
       // 스키마 누락 에러 감지 (contract_end_date, contract_type, hire_date 컬럼 유실 시)
       if (
@@ -369,11 +372,17 @@ ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS contract_end_date text DEFAULT
             <div className="p-5 space-y-4 text-xs md:text-sm">
               <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 flex gap-2">
                 <AlertTriangle size={15} className="shrink-0 mt-0.5" />
-                <div>
+                <div className="w-full">
                   <h4 className="font-bold text-xs m-0">왜 이 에러가 발생했나요?</h4>
                   <p className="text-[11px] leading-relaxed mt-1 text-zinc-650">
                     기존에 구축된 <code>tb_employees</code> 테이블에 신규 추가된 고용 관련 칼럼(<code>hire_date</code>, <code>contract_type</code>, <code>contract_end_date</code>)이 유실되어 있습니다. 시스템에서 해당 항목을 조회하거나 입력할 때 스키마 캐시 오류가 납니다.
                   </p>
+                  {lastDatabaseError && (
+                    <div className="mt-2.5 p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 font-mono text-[10px] break-all leading-normal text-left">
+                      <strong>실제 데이터베이스 서버 에러 로그:</strong><br />
+                      <span className="select-text">{lastDatabaseError}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
