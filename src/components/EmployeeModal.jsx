@@ -94,12 +94,14 @@ export default function EmployeeModal({
     }
   }, [status, isOpen]);
 
-  // Automatically force company to '미래에이비엠' if siteName is '본사'
+  // Automatically force company to '미래에이비엠' and contract to '정규직' if siteName is '본사'
   useEffect(() => {
     if (siteName.trim() === '본사') {
       setCompanyName('미래에이비엠');
+      setContractType('정규직');
     }
   }, [siteName]);
+
 
   const handlePhoneChange = (e) => {
     let raw = e.target.value.replace(/[^0-9]/g, '');
@@ -169,6 +171,11 @@ export default function EmployeeModal({
       if (!statusReason) return setErrorMsg('퇴사 사유를 입력하거나 선택해 주세요.');
       if (!statusDate) return setErrorMsg('퇴사일을 입력해 주세요.');
     }
+
+    if (siteName.trim() === '본사' && contractType !== '정규직') {
+      return setErrorMsg('본사 직원은 정규직으로만 등록할 수 있습니다.');
+    }
+
 
     if (!hireDate) return setErrorMsg('입사일을 입력해 주세요.');
     if (contractType === '계약직' && !contractEndDate) return setErrorMsg('계약 종료일을 입력해 주세요.');
@@ -577,12 +584,19 @@ export default function EmployeeModal({
               <select
                 value={contractType}
                 onChange={(e) => setContractType(e.target.value)}
-                className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-800 dark:text-white focus:outline-none focus:border-[#1B3D8E] focus:ring-1 focus:ring-[#1B3D8E] cursor-pointer"
+                disabled={siteName.trim() === '본사'}
+                className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-800 dark:text-white focus:outline-none focus:border-[#1B3D8E] focus:ring-1 focus:ring-[#1B3D8E] cursor-pointer disabled:bg-zinc-100 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500 disabled:cursor-not-allowed"
               >
                 <option value="정규직">정규직</option>
                 <option value="계약직">계약직</option>
               </select>
+              {siteName.trim() === '본사' && (
+                <span className="text-[9px] text-[#F39C12] mt-0.5 block select-none">
+                  ※ 본사 직원은 정규직으로 고정됩니다.
+                </span>
+              )}
             </div>
+
 
             {/* 6d. Contract End Date (Only visible if Contract Type is '계약직') */}
             {contractType === '계약직' && (
