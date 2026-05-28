@@ -30,6 +30,8 @@ export default function App() {
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
   const [employeeToEdit, setEmployeeToEdit] = useState(null);
   const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' | 'info' }
+  const [dbMigrationSql, setDbMigrationSql] = useState(null);
+  const [copiedMigrationSql, setCopiedMigrationSql] = useState(false);
 
   // Toast helper
   const showToast = (message, type = 'success') => {
@@ -117,7 +119,20 @@ export default function App() {
       loadAllData();
     } catch (err) {
       console.error(err);
-      showToast(err.message || '저장 처리 중 에러가 발생했습니다.', 'error');
+      const errMsg = err.message || err.details || JSON.stringify(err);
+      if (
+        errMsg.includes('contract_end_date') || 
+        errMsg.includes('contract_type') || 
+        errMsg.includes('hire_date') || 
+        errMsg.includes('schema cache')
+      ) {
+        setDbMigrationSql(`-- 기존 tb_employees 테이블에 신규 고용 정보 컬럼(입사일, 계약구분, 계약종료일) 추가 패치
+ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS hire_date text DEFAULT '';
+ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS contract_type text DEFAULT '정규직' CHECK (contract_type IN ('정규직', '계약직'));
+ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS contract_end_date text DEFAULT '';`);
+      } else {
+        showToast(errMsg || '저장 처리 중 에러가 발생했습니다.', 'error');
+      }
     }
   };
 
@@ -154,7 +169,21 @@ export default function App() {
       setLoading(false);
       console.error(err);
       const errMsg = err.message || err.details || JSON.stringify(err);
-      showToast(`엑셀 대용량 등록 오류: ${errMsg}`, 'error');
+      
+      // 스키마 누락 에러 감지 (contract_end_date, contract_type, hire_date 컬럼 유실 시)
+      if (
+        errMsg.includes('contract_end_date') || 
+        errMsg.includes('contract_type') || 
+        errMsg.includes('hire_date') || 
+        errMsg.includes('schema cache')
+      ) {
+        setDbMigrationSql(`-- 기존 tb_employees 테이블에 신규 고용 정보 컬럼(입사일, 계약구분, 계약종료일) 추가 패치
+ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS hire_date text DEFAULT '';
+ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS contract_type text DEFAULT '정규직' CHECK (contract_type IN ('정규직', '계약직'));
+ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS contract_end_date text DEFAULT '';`);
+      } else {
+        showToast(`엑셀 대용량 등록 오류: ${errMsg}`, 'error');
+      }
     }
   };
 
@@ -179,6 +208,13 @@ export default function App() {
       console.error(err);
       showToast('앱 삭제 처리 중 오류가 발생했습니다.', 'error');
     }
+  };
+
+  const handleCopyMigration = () => {
+    if (!dbMigrationSql) return;
+    navigator.clipboard.writeText(dbMigrationSql);
+    setCopiedMigrationSql(true);
+    setTimeout(() => setCopiedMigrationSql(false), 2000);
   };
 
   // Site name / Department lists extractor for suggestions inside EmployeeModal
@@ -228,8 +264,6 @@ export default function App() {
               {isConnected ? 'Supabase 실시간 연동' : '시뮬레이션 데모'}
             </span>
           </div>
-
-
 
           {/* Disconnect Button */}
           <button
@@ -322,6 +356,79 @@ export default function App() {
         onImport={handleExcelImport}
         employees={employees}
       />
+
+      {/* 3. DB Schema Migration Modal */}
+      {dbMigrationSql && (
+        <div className="fixed inset-0 bg-zinc-950/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto animate-fade-in font-sans">
+          <div className="w-full max-w-2xl bg-white border border-zinc-200 rounded-2xl shadow-xl overflow-hidden animate-slide-up my-8 text-left">
+            <div className="bg-zinc-50 px-5 py-4 border-b border-zinc-200 flex items-center gap-2">
+              <Database size={16} className="text-[#F39C12]" />
+              <h2 className="text-sm font-bold text-zinc-950 m-0">DB 스키마 마임그레이션 (칼럼 패치) 안내</h2>
+            </div>
+            
+            <div className="p-5 space-y-4 text-xs md:text-sm">
+              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 flex gap-2">
+                <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-bold text-xs m-0">왜 이 에러가 발생했나요?</h4>
+                  <p className="text-[11px] leading-relaxed mt-1 text-zinc-650">
+                    기존에 구축된 <code>tb_employees</code> 테이블에 신규 추가된 고용 관련 칼럼(<code>hire_date</code>, <code>contract_type</code>, <code>contract_end_date</code>)이 유실되어 있습니다. 시스템에서 해당 항목을 조회하거나 입력할 때 스키마 캐시 오류가 납니다.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <span className="block text-[11px] font-bold text-zinc-450 uppercase tracking-wider mb-1.5">
+                  해결을 위한 패치 SQL 쿼리
+                </span>
+                <div className="relative border border-zinc-200 rounded-xl overflow-hidden bg-zinc-950">
+                  <pre className="p-4 text-[10.5px] font-mono text-zinc-300 leading-relaxed overflow-x-auto select-all max-h-48">
+                    {dbMigrationSql}
+                  </pre>
+                  
+                  <button
+                    onClick={handleCopyMigration}
+                    className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-[10px] font-bold text-white rounded-lg cursor-pointer transition-colors shadow-sm"
+                  >
+                    {copiedMigrationSql ? (
+                      <>
+                        <ShieldCheck size={11} className="text-emerald-400" />
+                        <span className="text-emerald-400">복사 완료</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={11} />
+                        <span>SQL 복사</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-zinc-50 border border-zinc-200 p-4 rounded-xl space-y-2.5 text-[11.5px] text-zinc-600 leading-normal">
+                <h4 className="font-bold text-zinc-800 m-0">💡 실행 가이드</h4>
+                <ol className="list-decimal list-inside space-y-1.5 pl-0.5">
+                  <li>위 SQL 쿼리를 <strong>[SQL 복사]</strong> 버튼을 통해 복사해 주십시오.</li>
+                  <li>본인의 <strong>Supabase 프로젝트 대시보드</strong>로 접속합니다.</li>
+                  <li>왼쪽 사이드바 메뉴 중 <strong>[SQL Editor]</strong>에 들어갑니다.</li>
+                  <li>새 쿼리창(New Query)을 열어 복사한 쿼리를 붙여넣은 뒤 <strong>[Run]</strong> (단축키: Ctrl + Enter) 버튼을 클릭합니다.</li>
+                  <li>(중요) 실행 완료 후, 왼쪽 사이드바 하단 <strong>[Database]</strong> -&gt; <strong>[Schema Cache]</strong> 로 이동하여 <strong>[Reload postgREST schema]</strong> 버튼을 클릭하여 캐시를 갱신해 주십시오.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="bg-zinc-50 px-5 py-3.5 border-t border-zinc-200 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setDbMigrationSql(null)}
+                className="px-4 py-1.5 bg-zinc-900 hover:bg-zinc-850 text-white font-bold text-xs rounded-xl cursor-pointer shadow-xs transition-colors"
+              >
+                안내창 닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* D. Premium Toast Alert Notification Popup */}
       {toast && (
