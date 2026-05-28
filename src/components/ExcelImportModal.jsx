@@ -255,7 +255,9 @@ export default function ExcelImportModal({ isOpen, onClose, onImport, employees 
               formattedPhone = rawPhone;
             }
           } else {
-            formattedPhone = '';
+            // 연락처 누락 시 PostgreSQL의 UNIQUE 및 NOT NULL 제약조건 우회를 위해 겹치지 않는 고유 임시 번호 자동 부여
+            const uniqueSuffix = String(1000 + i).slice(-4);
+            formattedPhone = `010-0000-${uniqueSuffix}`;
           }
 
           if (!['재직', '휴직', '퇴사'].includes(rawStatus)) {
@@ -284,7 +286,7 @@ export default function ExcelImportModal({ isOpen, onClose, onImport, employees 
             department: rawDept,
             role: rawRole,
             phone: errors.some(e => e.includes('연락처')) ? rawPhone : formattedPhone,
-            email: rawEmail,
+            email: rawEmail || null,
             status: rawStatus,
             authority: rawAuth,
             hire_date: rawHireDate,

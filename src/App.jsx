@@ -153,7 +153,8 @@ export default function App() {
     } catch (err) {
       setLoading(false);
       console.error(err);
-      showToast('엑셀 대용량 등록 중 오류가 발생했습니다.', 'error');
+      const errMsg = err.message || err.details || JSON.stringify(err);
+      showToast(`엑셀 대용량 등록 오류: ${errMsg}`, 'error');
     }
   };
 
