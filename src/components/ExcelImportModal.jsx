@@ -196,9 +196,9 @@ export default function ExcelImportModal({ isOpen, onClose, onImport, employees 
 
           const rawName = String(row[nameIdx] || '').trim();
           let rawCompany = String(row[companyIdx] || '').trim();
-          const rawSite = String(row[siteIdx] || '').trim();
-          const rawDept = String(row[deptIdx] || '').trim();
-          const rawRole = String(row[roleIdx] || '').trim();
+          let rawSite = String(row[siteIdx] || '').trim();
+          let rawDept = String(row[deptIdx] || '').trim();
+          let rawRole = String(row[roleIdx] || '').trim();
           const rawPhone = String(row[phoneIdx] || '').trim();
           const rawEmail = String(emailIdx !== -1 ? row[emailIdx] || '' : '').trim();
           
@@ -217,18 +217,19 @@ export default function ExcelImportModal({ isOpen, onClose, onImport, employees 
           const errors = [];
           
           if (!rawName) errors.push('이름 누락');
+          
+          // Forgiving logic for Site
           if (!rawSite) {
-            errors.push('사업장명 누락');
-          } else {
-            if (rawSite !== '본사') {
-              const similarList = checkSimilarSites(rawSite);
-              if (similarList.length > 0) {
-                errors.push(`유사 사업장명 존재 ('${similarList.join(', ')}') - 오타/공백 확인 필요`);
-              }
+            rawSite = '미지정';
+          } else if (rawSite !== '본사') {
+            const similarList = checkSimilarSites(rawSite);
+            if (similarList.length > 0) {
+              rawSite = similarList[0];
             }
           }
-          if (!rawDept) errors.push('부서명 누락');
-          if (!rawRole) errors.push('직책 누락');
+          
+          if (!rawDept) rawDept = '-';
+          if (!rawRole) rawRole = '-';
           
           // HQ Rule: 본사 직원은 항상 미래에이비엠으로 설정 및 정규직 강제
           if (rawSite === '본사') {
@@ -238,21 +239,20 @@ export default function ExcelImportModal({ isOpen, onClose, onImport, employees 
           }
 
           if (!rawCompany) {
-            errors.push('법인명 누락');
+            rawCompany = '미래에이비엠';
           } else if (!['미래에이비엠', '다원피엠씨', '정다운세상', '다원엔텍'].includes(rawCompany)) {
             errors.push(`허용되지 않는 법인명 ('${rawCompany}')`);
           }
           
-          let formattedPhone = rawPhone.replace(/[^0-9]/g, '');
-          if (!rawPhone) {
-            errors.push('연락처 누락');
-          } else {
-            if (formattedPhone.length === 11) {
-              formattedPhone = `${formattedPhone.slice(0, 3)}-${formattedPhone.slice(3, 7)}-${formattedPhone.slice(7)}`;
-            } else if (formattedPhone.length === 10) {
-              formattedPhone = `${formattedPhone.slice(0, 3)}-${formattedPhone.slice(3, 6)}-${formattedPhone.slice(6)}`;
+          let formattedPhone = '';
+          if (rawPhone) {
+            const digits = rawPhone.replace(/[^0-9]/g, '');
+            if (digits.length === 11) {
+              formattedPhone = `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+            } else if (digits.length === 10) {
+              formattedPhone = `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
             } else {
-              errors.push('연락처 자릿수 오류 (10~11자리 숫자 필수)');
+              formattedPhone = rawPhone;
             }
           }
 
