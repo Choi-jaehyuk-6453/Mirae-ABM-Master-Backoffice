@@ -126,9 +126,17 @@ export default function App() {
         errMsg.includes('contract_end_date') || 
         errMsg.includes('contract_type') || 
         errMsg.includes('hire_date') || 
+        errMsg.includes('leave_end_date') || 
+        errMsg.includes('leave_start_date') || 
+        errMsg.includes('status_reason') || 
+        errMsg.includes('status_date') || 
         errMsg.includes('schema cache')
       ) {
-        setDbMigrationSql(`-- 기존 tb_employees 테이블에 신규 고용 정보 컬럼(입사일, 계약구분, 계약종료일) 추가 패치
+        setDbMigrationSql(`-- 기존 tb_employees 테이블에 누락된 상태 변경 및 고용 정보 컬럼 일괄 추가 패치
+ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS status_reason text DEFAULT '';
+ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS status_date text DEFAULT '';
+ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS leave_start_date text DEFAULT '';
+ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS leave_end_date text DEFAULT '';
 ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS hire_date text DEFAULT '';
 ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS contract_type text DEFAULT '정규직' CHECK (contract_type IN ('정규직', '계약직'));
 ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS contract_end_date text DEFAULT '';`);
@@ -173,14 +181,22 @@ ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS contract_end_date text DEFAULT
       const errMsg = err.message || err.details || JSON.stringify(err);
       setLastDatabaseError(errMsg);
       
-      // 스키마 누락 에러 감지 (contract_end_date, contract_type, hire_date 컬럼 유실 시)
+      // 스키마 누락 에러 감지 (상태 정보 또는 고용 정보 컬럼 유실 시)
       if (
         errMsg.includes('contract_end_date') || 
         errMsg.includes('contract_type') || 
         errMsg.includes('hire_date') || 
+        errMsg.includes('leave_end_date') || 
+        errMsg.includes('leave_start_date') || 
+        errMsg.includes('status_reason') || 
+        errMsg.includes('status_date') || 
         errMsg.includes('schema cache')
       ) {
-        setDbMigrationSql(`-- 기존 tb_employees 테이블에 신규 고용 정보 컬럼(입사일, 계약구분, 계약종료일) 추가 패치
+        setDbMigrationSql(`-- 기존 tb_employees 테이블에 누락된 상태 변경 및 고용 정보 컬럼 일괄 추가 패치
+ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS status_reason text DEFAULT '';
+ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS status_date text DEFAULT '';
+ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS leave_start_date text DEFAULT '';
+ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS leave_end_date text DEFAULT '';
 ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS hire_date text DEFAULT '';
 ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS contract_type text DEFAULT '정규직' CHECK (contract_type IN ('정규직', '계약직'));
 ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS contract_end_date text DEFAULT '';`);
@@ -375,7 +391,7 @@ ALTER TABLE tb_employees ADD COLUMN IF NOT EXISTS contract_end_date text DEFAULT
                 <div className="w-full">
                   <h4 className="font-bold text-xs m-0">왜 이 에러가 발생했나요?</h4>
                   <p className="text-[11px] leading-relaxed mt-1 text-zinc-650">
-                    기존에 구축된 <code>tb_employees</code> 테이블에 신규 추가된 고용 관련 칼럼(<code>hire_date</code>, <code>contract_type</code>, <code>contract_end_date</code>)이 유실되어 있습니다. 시스템에서 해당 항목을 조회하거나 입력할 때 스키마 캐시 오류가 납니다.
+                    기존에 구축된 <code>tb_employees</code> 테이블에 신규 추가된 고용 관련 및 상태 변경 이력 관리 칼럼(<code>hire_date</code>, <code>contract_type</code>, <code>contract_end_date</code>, <code>leave_start_date</code>, <code>leave_end_date</code> 등)이 유실되어 있어 스키마 캐시 오류가 발생했습니다.
                   </p>
                   {lastDatabaseError && (
                     <div className="mt-2.5 p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 font-mono text-[10px] break-all leading-normal text-left">
