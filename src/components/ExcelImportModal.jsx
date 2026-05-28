@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { X, FileSpreadsheet, Download, Upload, AlertCircle, CheckCircle, Info, Database } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-export default function ExcelImportModal({ isOpen, onClose, onImport }) {
+export default function ExcelImportModal({ isOpen, onClose, onImport, employees = [] }) {
   const [dragActive, setDragActive] = useState(false);
   const [fileName, setFileName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -124,6 +124,9 @@ export default function ExcelImportModal({ isOpen, onClose, onImport }) {
         const validList = [];
         const invalidList = [];
 
+        // DB의 기존 고유 사업장명 목록 추출 (ALL 및 본사 제외)
+        const existingSiteNames = [...new Set(employees.map(e => e.site_name).filter(Boolean))].filter(s => s !== 'ALL' && s !== '본사');
+
         const parseExcelDate = (val) => {
           if (!val) return '';
           const str = String(val).trim();
@@ -147,6 +150,42 @@ export default function ExcelImportModal({ isOpen, onClose, onImport }) {
           }
           
           return str;
+        };
+
+        const checkSimilarSites = (inputSite) => {
+          const normalize = (str) => String(str || '').replace(/[^a-zA-Z0-9가-힣]/g, '').trim();
+          const normInput = normalize(inputSite);
+          if (!normInput || existingSiteNames.includes(inputSite)) return [];
+
+          const getLevenshteinDistance = (a, b) => {
+            const matrix = [];
+            for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+            for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+            for (let i = 1; i <= b.length; i++) {
+              for (let j = 1; j <= a.length; j++) {
+                if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                  matrix[i][j] = matrix[i - 1][j - 1];
+                } else {
+                  matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j] + 1
+                  );
+                }
+              }
+            }
+            return matrix[b.length][a.length];
+          };
+
+          return existingSiteNames.filter(exSite => {
+            const normEx = normalize(exSite);
+            if (normEx === normInput) return true; // 공백 차이
+
+            const distance = getLevenshteinDistance(normInput, normEx);
+            const maxLength = Math.max(normInput.length, normEx.length);
+            const similarity = (maxLength - distance) / maxLength;
+            return similarity >= 0.6 || normInput.includes(normEx) || normEx.includes(normInput);
+          });
         };
 
         for (let i = 1; i < rows.length; i++) {
@@ -178,7 +217,16 @@ export default function ExcelImportModal({ isOpen, onClose, onImport }) {
           const errors = [];
           
           if (!rawName) errors.push('이름 누락');
-          if (!rawSite) errors.push('사업장명 누락');
+          if (!rawSite) {
+            errors.push('사업장명 누락');
+          } else {
+            if (rawSite !== '본사') {
+              const similarList = checkSimilarSites(rawSite);
+              if (similarList.length > 0) {
+                errors.push(`유사 사업장명 존재 ('${similarList.join(', ')}') - 오타/공백 확인 필요`);
+              }
+            }
+          }
           if (!rawDept) errors.push('부서명 누락');
           if (!rawRole) errors.push('직책 누락');
           

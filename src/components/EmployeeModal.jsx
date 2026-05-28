@@ -35,6 +35,7 @@ export default function EmployeeModal({
   
   // Duplicate warning states
   const [duplicateFound, setDuplicateFound] = useState(null);
+  const [similarSiteCandidates, setSimilarSiteCandidates] = useState([]);
   
   // Suggestion active states
   const [siteSuggestions, setSiteSuggestions] = useState([]);
@@ -80,6 +81,7 @@ export default function EmployeeModal({
     }
     setErrorMsg('');
     setDuplicateFound(null);
+    setSimilarSiteCandidates([]);
   }, [employeeToEdit, isOpen]);
 
   // Set default status date when changing status
@@ -200,6 +202,19 @@ export default function EmployeeModal({
       contract_end_date: contractType === '계약직' ? contractEndDate : ''
     };
 
+    // 0. Check similar site name first if it is a new registration
+    if (!employeeToEdit && similarSiteCandidates.length === 0) {
+      try {
+        const similarSites = await db.checkSimilarSite(payload.site_name);
+        if (similarSites.length > 0) {
+          setSimilarSiteCandidates(similarSites);
+          return;
+        }
+      } catch (err) {
+        console.error('Similar site checking error:', err);
+      }
+    }
+
     // Check duplicate employee if it is a new registration
     if (!employeeToEdit && !duplicateFound) {
       try {
@@ -215,6 +230,127 @@ export default function EmployeeModal({
 
     onSave(payload);
   };
+
+  if (!isOpen) return null;
+
+  if (similarSiteCandidates.length > 0) {
+    return (
+      <div className="fixed inset-0 bg-zinc-950/40 dark:bg-zinc-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto animate-fade-in font-sans">
+        <div className="w-full max-w-xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden animate-slide-up text-left">
+          
+          {/* Header */}
+          <div className="bg-[#F39C12]/10 px-5 py-3.5 border-b border-[#F39C12]/20 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-[#E67E22] dark:text-[#F39C12]">
+              <span className="font-bold flex items-center gap-1.5">⚠️ 유사 사업장명 오타/중복 의심 감지</span>
+            </div>
+            <button
+              onClick={() => setSimilarSiteCandidates([])}
+              className="p-1 text-[#E67E22] hover:text-amber-800 dark:hover:text-[#F39C12] rounded-lg hover:bg-amber-100/50 cursor-pointer transition-colors"
+            >
+              <X size={15} />
+            </button>
+          </div>
+
+          <div className="p-5 space-y-4 text-xs md:text-sm text-left">
+            <div className="bg-amber-500/5 border border-amber-500/10 p-3.5 rounded-xl space-y-2 leading-relaxed text-zinc-700 dark:text-zinc-300">
+              <p>
+                입력하신 사업장명 <strong>'{siteName}'</strong>과 유사한 기존 등록 사업장이 감지되었습니다. 
+                공동 DB 내 동일한 현장이 다중 분열되는 것을 막기 위해 기존 명칭으로 통일하시겠습니까?
+              </p>
+            </div>
+
+            {/* Candidates Selection */}
+            <div className="space-y-2.5">
+              <h4 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">감지된 기존 유사 사업장명 목록</h4>
+              
+              <div className="grid grid-cols-1 gap-2">
+                {similarSiteCandidates.map((candidate, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      const updatedPayload = {
+                        name: name.trim(),
+                        company_name: candidate === '본사' ? '미래에이비엠' : companyName,
+                        site_name: candidate,
+                        department: department.trim(),
+                        role: role.trim(),
+                        phone: phone.trim(),
+                        email: email.trim(),
+                        status,
+                        authority,
+                        status_reason: status !== '재직' ? statusReason : '',
+                        status_date: status === '퇴사' ? statusDate : (status === '휴직' ? leaveStartDate : ''),
+                        leave_start_date: status === '휴직' ? leaveStartDate : '',
+                        leave_end_date: status === '휴직' ? leaveEndDate : '',
+                        hire_date: hireDate,
+                        contract_type: candidate === '본사' ? '정규직' : contractType,
+                        contract_end_date: (candidate === '본사' || contractType !== '계약직') ? '' : contractEndDate
+                      };
+                      onSave(updatedPayload);
+                      setSimilarSiteCandidates([]);
+                    }}
+                    className="w-full text-left p-3 bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800 hover:border-[#1B3D8E] dark:hover:border-[#3B66C4] hover:bg-[#1B3D8E]/[0.02] rounded-xl flex items-center justify-between cursor-pointer transition-all group"
+                  >
+                    <div>
+                      <span className="text-[10px] font-bold text-zinc-400 block mb-0.5">이 명칭으로 통일 선택</span>
+                      <strong className="text-zinc-900 dark:text-white text-xs md:text-sm">{candidate}</strong>
+                    </div>
+                    <span className="text-[11px] font-bold text-[#1B3D8E] dark:text-[#3B66C4] group-hover:underline">적용 후 등록 &rarr;</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-2 text-zinc-500 text-[11px] leading-relaxed">
+              * <strong>기존 명칭으로 적용</strong>: 오타 및 띄어쓰기 기입 오류로 간주하고, 이미 등록된 기존 현장 명칭으로 치환해 등록합니다.<br />
+              * <strong>신규 사업장으로 등록</strong>: 철자는 비슷하나 실제로 완전히 새로 개설된 별개의 신규 사업장인 경우, 기입한 글자 그대로 강제 추가합니다.
+            </div>
+
+            {/* Footer actions */}
+            <div className="pt-4 border-t border-zinc-150 dark:border-zinc-800 flex flex-col sm:flex-row gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setSimilarSiteCandidates([])}
+                className="px-3.5 py-2 bg-white hover:bg-zinc-50 dark:bg-zinc-950 dark:hover:bg-zinc-850 text-zinc-700 dark:text-zinc-300 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 cursor-pointer transition-colors"
+              >
+                조정 취소 (입력 수정)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const payload = {
+                    name: name.trim(),
+                    company_name: companyName,
+                    site_name: siteName.trim(),
+                    department: department.trim(),
+                    role: role.trim(),
+                    phone: phone.trim(),
+                    email: email.trim(),
+                    status,
+                    authority,
+                    status_reason: status !== '재직' ? statusReason : '',
+                    status_date: status === '퇴사' ? statusDate : (status === '휴직' ? leaveStartDate : ''),
+                    leave_start_date: status === '휴직' ? leaveStartDate : '',
+                    leave_end_date: status === '휴직' ? leaveEndDate : '',
+                    hire_date: hireDate,
+                    contract_type: contractType,
+                    contract_end_date: contractType === '계약직' ? contractEndDate : ''
+                  };
+                  onSave(payload);
+                  setSimilarSiteCandidates([]);
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-xs font-bold rounded-xl shadow-sm cursor-pointer transition-all"
+              >
+                신규 사업장 '{siteName}'으로 강제 등록
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isOpen) return null;
 

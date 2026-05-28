@@ -319,6 +319,7 @@ export default function App() {
         isOpen={isExcelModalOpen}
         onClose={() => setIsExcelModalOpen(false)}
         onImport={handleExcelImport}
+        employees={employees}
       />
 
       {/* D. Premium Toast Alert Notification Popup */}

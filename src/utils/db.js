@@ -529,6 +529,68 @@ export const db = {
     });
   },
 
+  // 4e. Check Similar Site Name (Fuzzy matching)
+  checkSimilarSite: async (inputSiteName) => {
+    if (!inputSiteName) return [];
+    
+    // 특수문자 및 공백 정규화 제거 헬퍼
+    const normalize = (str) => String(str || '').replace(/[^a-zA-Z0-9가-힣]/g, '').trim();
+    const normInput = normalize(inputSiteName);
+    if (!normInput) return [];
+
+    // 레벤슈타인 거리 계산 헬퍼
+    const getLevenshteinDistance = (a, b) => {
+      const matrix = [];
+      for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+      for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1, // substitution
+              matrix[i][j - 1] + 1,     // insertion
+              matrix[i - 1][j] + 1      // deletion
+            );
+          }
+        }
+      }
+      return matrix[b.length][a.length];
+    };
+
+    let employees = [];
+    if (db.isSupabaseConnected()) {
+      try {
+        const { data } = await supabaseClient.from('tb_employees').select('site_name');
+        employees = data || [];
+      } catch (e) {
+        employees = JSON.parse(localStorage.getItem('db_employees') || '[]');
+      }
+    } else {
+      employees = JSON.parse(localStorage.getItem('db_employees') || '[]');
+    }
+
+    // DB의 모든 고유한 기존 사업장명 목록 추출
+    const uniqueSites = [...new Set(employees.map(e => e.site_name).filter(Boolean))].filter(s => s !== 'ALL');
+
+    // 입력값과 완벽히 일치하면 유사 판정하지 않고 빈 배열 리턴 (일치하므로 통과)
+    if (uniqueSites.includes(inputSiteName)) return [];
+
+    // 유사한 기존 이름들 매칭
+    return uniqueSites.filter(existingSite => {
+      const normExisting = normalize(existingSite);
+      if (normExisting === normInput) return true; // 공백 차이만 있는 경우 무조건 유사함
+
+      const distance = getLevenshteinDistance(normInput, normExisting);
+      const maxLength = Math.max(normInput.length, normExisting.length);
+      const similarity = (maxLength - distance) / maxLength;
+
+      // 유사도가 0.6 이상이거나 서로 포함 관계인 경우 유사하다고 판정
+      return similarity >= 0.6 || normInput.includes(normExisting) || normExisting.includes(normInput);
+    });
+  },
+
   // 5. Connect and fetch external integration apps
   getApps: async () => {
     if (db.isSupabaseConnected()) {
